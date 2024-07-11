@@ -14,6 +14,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=workflows
+      - NATS_URL=nats://nats:4222
     volumes:
       - ./node_modules:/usr/app/node_modules
       - ./libs:/usr/src/app/libs
@@ -25,6 +26,7 @@ services:
       - ./apps/workflows-service:/usr/src/app/apps/workflows-service
     depends_on: # This instructs Docker Compose to start the "workflows-db" container before starting the "workflows-service" container
       - workflows-db
+      - nats
   workflows-db:
     image: postgres:13.2-alpine
     environment: # We need to make sure these environment variables match the ones we specified in the "workflows-service" service
@@ -46,6 +48,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=virtual-facility
+      - NATS_URL=nats://nats:4222
     volumes:
       - ./node_modules:/usr/app/node_modules
       - ./libs:/usr/src/app/libs
@@ -56,9 +59,12 @@ services:
     depends_on:
       - virtual-facility-db
       - workflows-service
+      - nats
   virtual-facility-db:
     image: postgres:13.2-alpine
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=virtual-facility
+  nats:
+    image: nats:2.2.2-alpine
