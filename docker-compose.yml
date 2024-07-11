@@ -1,0 +1,64 @@
+version: "3.8"
+
+services:
+  workflows-service:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        - APP_NAME=workflows-service
+    command: npm run start:dev -- workflows-service # This instructs Docker Compose to run the "start:dev" script when starting the container
+    environment: # Here we specify the environment variables that will be passed to the container
+      - POSTGRES_HOST=workflows-db
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=workflows
+    volumes:
+      - ./node_modules:/usr/app/node_modules
+      - ./libs:/usr/src/app/libs
+      - ./package.json:/usr/src/app/package.json
+      - ./tsconfig.json:/usr/src/app/tsconfig.json
+      # Note: This is usually not a good practice to mount the "node_modules" directory on the host to the container       # We are doing this for the sake of simplicity in this example       - ./node_modules:/usr/src/app/node_modules
+      # This instructs Docker Compose to mount the "workflows-service" directory on the host to the "/usr/src/app" directory on the container
+      # This allows us to make changes to the code on the host and have them reflected in the container without having to rebuild the image
+      - ./apps/workflows-service:/usr/src/app/apps/workflows-service
+    depends_on: # This instructs Docker Compose to start the "workflows-db" container before starting the "workflows-service" container
+      - workflows-db
+  workflows-db:
+    image: postgres:13.2-alpine
+    environment: # We need to make sure these environment variables match the ones we specified in the "workflows-service" service
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=workflows
+  virtual-facility:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        - APP_NAME=app
+    command: npm run start:dev -- app
+    ports:
+      - 3000:3000 # This instructs Docker Compose to map port 3000 on the host to port 3000 on the container
+    environment:
+      - POSTGRES_HOST=virtual-facility-db
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=virtual-facility
+    volumes:
+      - ./node_modules:/usr/app/node_modules
+      - ./libs:/usr/src/app/libs
+      - ./package.json:/usr/src/app/package.json
+      - ./tsconfig.json:/usr/src/app/tsconfig.json
+      # Note: This is usually not a good practice to mount the "node_modules" directory on the host to the container       # We are doing this for the sake of simplicity in this example       - ./node_modules:/usr/src/app/node_modules
+      - ./apps/app:/usr/src/app/apps/app
+    depends_on:
+      - virtual-facility-db
+      - workflows-service
+  virtual-facility-db:
+    image: postgres:13.2-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=virtual-facility
