@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { WorkflowsModule } from './workflows/workflows.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -14,7 +15,8 @@ import { WorkflowsModule } from './workflows/workflows.module';
         autoLoadEntities: true,
         synchronize: true,
       }),
-      WorkflowsModule
+      WorkflowsModule,
+      HealthModule
   ],
 })
 export class WorkflowsServiceModule {}
