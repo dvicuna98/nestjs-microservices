@@ -3,6 +3,7 @@ import { AlarmsGeneratorService } from './alarms-generator.service';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ALARMS_SERVICE } from './constants';
+import * as process from "node:process";
 
 @Module({
   imports: [
@@ -10,9 +11,10 @@ import { ALARMS_SERVICE } from './constants';
     ClientsModule.register([
       {
         name: ALARMS_SERVICE,
-        transport: Transport.NATS,
+        transport: Transport.RMQ,
         options: {
-          servers: process.env.NATS_URL,
+          urls: [process.env.RABBITMQ_URL],
+          queue: 'workflows-service'
         },
       },
     ]),
