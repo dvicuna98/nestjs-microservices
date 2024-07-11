@@ -1,5 +1,4 @@
-FROM node:21.6.2
-
+FROM node:21.6.2 AS dependency-base
 # Define variables
 ARG APP_NAME
 
@@ -15,6 +14,7 @@ RUN npm install
 # Bundle app source
 COPY . .
 
+FROM dependency-base AS production-base
 # Creates a "dist" folder with the production build
 RUN npm run build -- ${APP_NAME}
 

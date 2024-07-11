@@ -1,6 +1,19 @@
 version: "3.8"
 
 services:
+
+  app:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      target: dependency-base
+      args:
+        - APP_NAME=main
+    volumes:
+      - ./:/usr/src/app
+    stdin_open: true
+    tty: true
+
   workflows-service:
     build:
       context: .
@@ -18,7 +31,7 @@ services:
     deploy:
       replicas: 3
     volumes:
-      - ./node_modules:/usr/app/node_modules
+      - ./node_modules:/usr/src/app/node_modules
       - ./libs:/usr/src/app/libs
       - ./package.json:/usr/src/app/package.json
       - ./tsconfig.json:/usr/src/app/tsconfig.json
@@ -52,7 +65,7 @@ services:
       - POSTGRES_DB=virtual-facility
       - NATS_URL=nats://nats:4222
     volumes:
-      - ./node_modules:/usr/app/node_modules
+      - ./node_modules:/usr/src/app/node_modules
       - ./libs:/usr/src/app/libs
       - ./package.json:/usr/src/app/package.json
       - ./tsconfig.json:/usr/src/app/tsconfig.json
@@ -70,3 +83,39 @@ services:
       - POSTGRES_DB=virtual-facility
   nats:
     image: nats:2.2.2-alpine
+
+  alarms-service:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        - APP_NAME=alarms-service
+    command: npm run start:dev -- alarms-service
+    environment:
+      - NATS_URL=nats://nats:4222
+    volumes:
+      - ./libs:/usr/src/app/libs
+      - ./package.json:/usr/src/app/package.json
+      - ./tsconfig.json:/usr/src/app/tsconfig.json
+      - ./node_modules:/usr/src/app/node_modules
+      - ./apps/alarms-service:/usr/src/app/apps/alarms-service
+    depends_on:
+      - nats
+
+  alarms-generator:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        - APP_NAME=alarms-generator
+    command: npm run start:dev -- alarms-generator
+    environment:
+      - NATS_URL=nats://nats:4222
+    volumes:
+      - ./libs:/usr/src/app/libs
+      - ./package.json:/usr/src/app/package.json
+      - ./tsconfig.json:/usr/src/app/tsconfig.json
+      - ./apps/alarms-generator:/usr/src/app/apps/alarms-generator
+      - ./node_modules:/usr/src/app/node_modules
+    depends_on:
+      - nats
