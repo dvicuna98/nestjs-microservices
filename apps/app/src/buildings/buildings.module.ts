@@ -5,6 +5,7 @@ import { BuildingsController } from './buildings.controller';
 import {Building} from "./entities/building.entity";
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { WORKFLOWS_SERVICE } from '../constants';
+import * as process from "node:process";
 
 @Module({
   imports: [
@@ -12,9 +13,10 @@ import { WORKFLOWS_SERVICE } from '../constants';
       ClientsModule.register([
         {
           name: WORKFLOWS_SERVICE,
-          transport: Transport.NATS,
+          transport: Transport.RMQ,
           options: {
-            servers: process.env.NATS_URL,
+              urls: [process.env.RABBITMQ_URL],
+              queue: 'workflows-service'
           },
         },
       ]),

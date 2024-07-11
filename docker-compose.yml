@@ -28,8 +28,9 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=workflows
       - NATS_URL=nats://nats:4222
-    deploy:
-      replicas: 3
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq-container:5672
+#    deploy:
+#      replicas: 3
     volumes:
       - ./node_modules:/usr/src/app/node_modules
       - ./libs:/usr/src/app/libs
@@ -42,6 +43,7 @@ services:
     depends_on: # This instructs Docker Compose to start the "workflows-db" container before starting the "workflows-service" container
       - workflows-db
       - nats
+      - rabbitmq
   workflows-db:
     image: postgres:13.2-alpine
     environment: # We need to make sure these environment variables match the ones we specified in the "workflows-service" service
@@ -64,6 +66,7 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=virtual-facility
       - NATS_URL=nats://nats:4222
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq-container:5672
     volumes:
       - ./node_modules:/usr/src/app/node_modules
       - ./libs:/usr/src/app/libs
@@ -75,6 +78,7 @@ services:
       - virtual-facility-db
       - workflows-service
       - nats
+      - rabbitmq
   virtual-facility-db:
     image: postgres:13.2-alpine
     environment:
@@ -93,6 +97,7 @@ services:
     command: npm run start:dev -- alarms-service
     environment:
       - NATS_URL=nats://nats:4222
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq-container:5672
     volumes:
       - ./libs:/usr/src/app/libs
       - ./package.json:/usr/src/app/package.json
@@ -101,6 +106,7 @@ services:
       - ./apps/alarms-service:/usr/src/app/apps/alarms-service
     depends_on:
       - nats
+      - rabbitmq
 
   alarms-generator:
     build:
@@ -111,6 +117,7 @@ services:
     command: npm run start:dev -- alarms-generator
     environment:
       - NATS_URL=nats://nats:4222
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq-container:5672
     volumes:
       - ./libs:/usr/src/app/libs
       - ./package.json:/usr/src/app/package.json
@@ -119,6 +126,7 @@ services:
       - ./node_modules:/usr/src/app/node_modules
     depends_on:
       - nats
+      - rabbitmq
   alarms-classifier-service:
     build:
       context: .
@@ -128,6 +136,7 @@ services:
     command: npm run start:dev -- alarms-classifier-service
     environment:
       - NATS_URL=nats://nats:4222
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq-container:5672
     volumes:
       - ./libs:/usr/src/app/libs
       - ./package.json:/usr/src/app/package.json
@@ -136,6 +145,7 @@ services:
       - ./apps/alarms-classifier-service:/usr/src/app/apps/alarms-classifier-service
     depends_on:
       - nats
+      - rabbitmq
 
   notifications-service:
     build:
@@ -146,6 +156,7 @@ services:
     command: npm run start:dev -- notifications-service
     environment:
       - NATS_URL=nats://nats:4222
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq-container:5672
     volumes:
       - ./libs:/usr/src/app/libs
       - ./package.json:/usr/src/app/package.json
@@ -154,3 +165,15 @@ services:
       - ./apps/notifications-service:/usr/src/app/apps/notifications-service
     depends_on:
       - nats
+      - rabbitmq
+  rabbitmq:
+    image: rabbitmq:3.11-management
+    container_name: rabbitmq-container
+    tty: true
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_USER: ${RABBITMQ_USERNAME:-"guest"}
+      RABBITMQ_PASS: ${RABBITMQ_PASSWORD:-"guest"}
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST:-"/"}
